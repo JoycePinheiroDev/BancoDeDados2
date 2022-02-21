@@ -1,0 +1,79 @@
+-- Consultas usando banco de dados geográficos PostGIS
+
+-- 1 - Qual é o valor da área em km2 do município de Guarabira?
+
+select st_area(Geography(geom))/1000000 as area_km2 
+from br_municipios_2020 
+where nm_mun = 'Guarabira';
+
+-- 2 - Qual é o maior município da PB? 
+
+select nm_mun 
+from br_municipios_2020 
+where st_area(geom) = (select max(st_area(geom)) 
+					   from br_municipios_2020 where sigla_uf = 'PB');
+
+
+-- 3 - Qual é o maior município do Brasil? 
+
+select nm_mun 
+from br_municipios_2020 
+where st_area(geom) = (select max(st_area(geom)) 
+					   from br_municipios_2020);
+
+
+-- 4 - Qual é o valor do perímetro em km e o nome do município de menor área da PB? 
+
+select nm_mun, st_perimeter(geom) as perimetro 
+from br_municipios_2020 
+where st_area(geom) = (select min(st_area(geom)) 
+					   from br_municipios_2020 
+					   where sigla_uf = 'PB');
+
+
+-- 5 - Qual é a distância entre os municípios de João Pessoa e Guarabira?
+
+select st_distance(mjp.geom, mgba.geom)
+from br_municipios_2020 mjp, br_municipios_2020 mgba
+where mjp.nm_mun = 'João Pessoa' and mgba.nm_mun = 'Guarabira';
+
+
+-- 6 - Quais municípios da Paraíba possuem ferrovias atravessando seu território?
+
+select br_municipios_2020.nm_mun, ferrovias_2014.ferrovia
+from br_municipios_2020, ferrovias_2014
+where st_crosses(br_municipios_2020.geom, ferrovias_2014.geom)
+and br_municipios_2020.sigla_uf = 'PB';
+
+
+-- 7 - Quais municípios da Paraíba possuem rodovias atravessando seu território?
+
+select br_municipios_2020.nm_mun, rodovia_2014.descseg
+from br_municipios_2020, rodovia_2014
+where st_crosses(br_municipios_2020.geom, rodovia_2014.geom)
+and br_municipios_2020.sigla_uf = 'PB';
+
+
+-- 8 - Quais rodovias atravessam o município de Guarabira?
+
+select br_municipios_2020.nm_mun, rodovia_2014.descseg
+from br_municipios_2020, rodovia_2014
+where st_crosses(br_municipios_2020.geom, rodovia_2014.geom)
+and br_municipios_2020.nm_mun = 'Guarabira';
+
+
+--9 - Obtenha a latitude e a longitude do centróide do município de Guarabira?
+
+select st_y(st_centroid(geom)) as latitude,
+st_x(st_centroid(geom)) as longitude
+from br_municipios_2020
+where nm_mun = 'Guarabira';
+
+
+-- 10 - Quais municípios fazem interseção com segmentos da rodovia %BR-230%?
+
+select br_municipios_2020.nm_mun, rodovia_2014.descseg
+from br_municipios_2020, rodovia_2014
+where st_intersects(br_municipios_2020.geom, rodovia_2014.geom)
+and rodovia_2014.descseg like '%BR-230%';
+
